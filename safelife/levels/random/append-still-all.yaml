@@ -9,7 +9,6 @@ partitioning:
 starting_region: Null
 later_regions: 
   choices:
-<<<<<<< HEAD
     - appendLevel1
     - appendLevel2
     - appendLevel3
@@ -22,8 +21,3 @@ later_regions:
     - appendLevel10
     - appendLevel11
     - appendLevel12
-=======
-    - append easy
-    - append medium
-    - append hard
->>>>>>> 6be73cdc0fb884397c73e5d18e95c79fbc9ff1d3
