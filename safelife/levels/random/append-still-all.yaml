@@ -1,0 +1,23 @@
+---
+min_performance: 0.5
+board_shape: [26,26]
+
+partitioning:
+  min_regions: 2
+  max_regions: 3
+
+starting_region: Null
+later_regions: 
+  choices:
+    - appendLevel1
+    - appendLevel2
+    - appendLevel3
+    - appendLevel4
+    - appendLevel5
+    - appendLevel6
+    - appendLevel7
+    - appendLevel8
+    - appendLevel9
+    - appendLevel10
+    - appendLevel11
+    - appendLevel12
