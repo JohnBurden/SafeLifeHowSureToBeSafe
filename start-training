@@ -18,6 +18,7 @@ env_types = [
     'prune-still',
     'prune-spawn',
     'navigate',
+    'append-still-all',
 ]
 
 parser = argparse.ArgumentParser(description="""
@@ -38,11 +39,12 @@ parser.add_argument('--port', default=6006, type=int,
     help="Port on which to run tensorboard.")
 parser.add_argument('--run-benchmarks', action="store_true",
     help="Don't do training; just run benchmarks on all benchmark levels.")
+parser.add_argument('--which-benchmark', default=None)
 parser.add_argument('--impact-penalty', default=0.0, type=float)
 parser.add_argument('--penalty-baseline',
     choices=('starting-state', 'inaction'), default='starting-state')
 parser.add_argument('--env-type', choices=env_types)
-parser.add_argument('--algo', choices=('ppo', 'dqn'), default='ppo')
+parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua'), default='ppo')
 parser.add_argument('--seed', default=None, type=int)
 args = parser.parse_args()
 
@@ -74,6 +76,9 @@ if os.path.exists(data_dir) and args.data_dir is not None:
 os.makedirs(data_dir, exist_ok=True)
 logfile = os.path.join(data_dir, 'training.log')
 
+
+def getNum(x):
+    return ''.join(ele for ele in x if ele.isdigit())
 
 # Get the environment type from the job name if not otherwise supplied
 if args.env_type:
@@ -185,7 +190,7 @@ try:
                 summary_writer=False,
                 training_log=False,
                 testing_video_name="benchmark-{level_name}",
-                testing_log="benchmark-data.json")
+                testing_log=getNum(args.which_benchmark)+'-benchmark-data.json')
         else:
             data_logger = SafeLifeLogger(subdir)
 
@@ -193,10 +198,20 @@ try:
             t_penalty = [1.0e6, 2.0e6]
             t_performance = [1.0e6, 2.0e6]
             level_iterator = SafeLifeLevelIterator(
-                'random/append-still-easy.yaml',
+                'random/append-still.yaml',
                 seed=seed2
             )
             test_levels = 'benchmarks/v1.0/append-still.npz'
+
+        if env_type == 'append-still-all':
+            t_penalty = [1.0e6, 2.0e6]
+            t_performance = [1.0e6, 2.0e6]
+            level_iterator = SafeLifeLevelIterator(
+                'random/append-still-all.yaml',
+                seed=seed2
+            )
+            test_levels = 'benchmarks/v1.0/append-still.npz'
+
 
         elif env_type == 'prune-still':
             t_penalty = [0.5e6, 1.5e6]
@@ -253,11 +268,15 @@ try:
             level_iterator=level_iterator,
         )
         if args.run_benchmarks:
+            bench_level_iterator = SafeLifeLevelIterator(
+                args.which_benchmark,
+                seed=seed2
+            )
+
             testing_envs = safelife_env_factory(
                 data_logger=data_logger, num_envs=20, testing=True,
-                level_iterator=SafeLifeLevelIterator(
-                    test_levels, repeat_levels=True)
-            )
+                level_iterator=bench_level_iterator
+                )
         else:
             testing_envs = safelife_env_factory(
                 data_logger=data_logger, num_envs=5, testing=True,
@@ -289,14 +308,29 @@ try:
                 training_envs=training_envs,
                 testing_envs=testing_envs,
                 data_logger=data_logger)
+
+        elif args.algo=='ua':
+            from training.models import SafeLifeQNetwork
+            from training.uniformAgent import UniformAgent
+
+            obs_shape = training_envs[0].observation_space.shape
+            train_model = SafeLifeQNetwork(obs_shape)
+            target_model = SafeLifeQNetwork(obs_shape)
+            algo = UniformAgent(
+                train_model, target_model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+
         else:
             logging.error("Unexpected algorithm type '%s'", args.algo)
             raise ValueError("unexpected algorithm type")
 
+
         if args.run_benchmarks:
             algo.run_episodes(testing_envs, num_episodes=1000)
         else:
-            algo.train(6e6)
+            algo.train(1e8)
 
 except Exception:
     logging.exception("Ran into an unexpected error. Aborting training.")
