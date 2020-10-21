@@ -1,11 +1,11 @@
 ---
 min_performance: 0.5
-board_shape: [15,15]
+board_shape: [10,10]
 
 partitioning:
   min_regions: 2
   max_regions: 3
 
 starting_region: Null
-later_regions: appendLevel5
+later_regions: appendLevel0
 

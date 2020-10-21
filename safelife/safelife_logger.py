@@ -249,6 +249,7 @@ class SafeLifeLogger(BaseLogger):
         log_data['reward_possible'] = float(game.initial_available_points)
         log_data['reward_needed'] = game.required_points()
         log_data['time'] = datetime.utcnow().isoformat()
+        log_data['unique_locations'] = len(set(history['locations']))
         logger.info(console_msg.format(**log_data, **self.cumulative_stats))
 
         # Then log to file.
@@ -428,6 +429,7 @@ class SafeLifeLogWrapper(gym.Wrapper):
             game = self.env.game
             self._episode_history['board'].append(game.board)
             self._episode_history['goals'].append(game.goals)
+            self._episode_history['locations'].append(game.agent_loc)
             self._episode_history['orientation'].append(game.orientation)
 
         if done and not self._did_log_episode and self.logger is not None:
@@ -446,7 +448,8 @@ class SafeLifeLogWrapper(gym.Wrapper):
         self._episode_history = {
             'board': [],
             'goals': [],
-            'orientation': []
+            'orientation': [],
+            'locations': []
         }
 
         return observation

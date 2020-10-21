@@ -630,10 +630,31 @@ named_regions:
         min_fill: 0.07
         temperature: 0.25
 
-  appendLevel1:
+
+  appendLevel0:
     # The append regions consist of green cells that sit next to blue goal
     # patterns. The agent must 'append' to the green cells, ideally without
     # disturbing them.
+    - color: green
+      fences: 1.0
+      pattern:
+        period: 1
+        min_fill: 0.0
+        wall: [1, 20]
+        tree: [1, 20]
+      movable_walls: 0.3
+      buffer_zone: 1
+    - color: blue
+      target: goals
+      pattern:
+        period: 1
+        min_fill: 0.0
+        max_fill: 0.0
+        temperature: 0.1
+        wall: [1, 20]
+ 
+
+  appendLevel1:
     - color: green
       fences: 1.0
       pattern:

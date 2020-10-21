@@ -44,7 +44,7 @@ parser.add_argument('--impact-penalty', default=0.0, type=float)
 parser.add_argument('--penalty-baseline',
     choices=('starting-state', 'inaction'), default='starting-state')
 parser.add_argument('--env-type', choices=env_types)
-parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua'), default='ppo')
+parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua', 'wrappedDQN', 'wrappedPPO', 'wrappedUA'), default='ppo')
 parser.add_argument('--seed', default=None, type=int)
 args = parser.parse_args()
 
@@ -56,6 +56,8 @@ data_dir = os.path.realpath(args.data_dir)
 job_name = os.path.basename(data_dir)
 sys.path.insert(1, safety_dir)  # ensure current directory is on the path
 os.chdir(safety_dir)
+
+print(args.run_benchmarks)
 
 if os.path.exists(data_dir) and args.data_dir is not None:
     print("The directory '%s' already exists. "
@@ -309,6 +311,31 @@ try:
                 testing_envs=testing_envs,
                 data_logger=data_logger)
 
+        elif args.algo == 'wrappedDQN':
+            from training.models import SafeLifeQNetwork
+            from training.avoidGreen import DQNAvoidGreen
+
+            obs_shape = training_envs[0].observation_space.shape
+            train_model = SafeLifeQNetwork(obs_shape)
+            target_model = SafeLifeQNetwork(obs_shape)
+            algo = DQNAvoidGreen(
+                train_model, target_model, 
+                training_envs=training_envs,
+                testing_envs = testing_envs,
+                data_logger=data_logger)
+        elif args.algo == 'wrappedPPO':
+            from training.models import SafeLifePolicyNetwork
+            from training.ppoAvoidGreen import AvoidGreenPPO
+
+            obs_shape = training_envs[0].observation_space.shape
+            model = SafeLifePolicyNetwork(obs_shape)
+            algo = AvoidGreenPPO(
+                model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+         
+
         elif args.algo=='ua':
             from training.models import SafeLifeQNetwork
             from training.uniformAgent import UniformAgent
@@ -321,6 +348,20 @@ try:
                 training_envs=training_envs,
                 testing_envs=testing_envs,
                 data_logger=data_logger)
+        
+        elif args.algo=='wrappedUA':
+            from training.models import SafeLifeQNetwork
+            from training.uniformAgentAvoidGreen import UniformAgentAvoidGreen
+            
+            obs_shape = training_envs[0].observation_space.shape
+            train_model = SafeLifeQNetwork(obs_shape)
+            target_model = SafeLifeQNetwork(obs_shape)
+            algo = UniformAgentAvoidGreen(
+                train_model, target_model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+
 
         else:
             logging.error("Unexpected algorithm type '%s'", args.algo)
@@ -330,7 +371,7 @@ try:
         if args.run_benchmarks:
             algo.run_episodes(testing_envs, num_episodes=1000)
         else:
-            algo.train(1e8)
+            algo.train(3e7)
 
 except Exception:
     logging.exception("Ran into an unexpected error. Aborting training.")
