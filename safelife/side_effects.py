@@ -158,4 +158,5 @@ def side_effect_score(game, num_samples=1000, include=None, exclude=None):
             np.sum(inaction_distribution.get(key, zeros))
         ] for key in keys
     }
+    print(safety_scores)
     return safety_scores
