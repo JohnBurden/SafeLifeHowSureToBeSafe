@@ -10,7 +10,7 @@ from safelife.random import get_rng
 
 from .base_algo import BaseAlgo
 from .utils import named_output, round_up
-
+import copy
 
 logger = logging.getLogger(__name__)
 USE_CUDA = torch.cuda.is_available()
@@ -142,6 +142,15 @@ class DQN(BaseAlgo):
         ]
         tensor_states = self.tensor(states, torch.float32)
         qvals = self.training_model(tensor_states).detach().cpu().numpy()
+ 
+
+        confidences = []
+
+        for ind, qvali in enumerate(qvals):
+            qvaliCopy = copy.deepcopy(qvali)
+            e_qvals = np.exp(qvaliCopy - np.max(qvaliCopy))
+            softmax = e_qvals/e_qvals.sum()
+            confidences.append(softmax)
 
         num_states, num_actions = qvals.shape
         actions = np.argmax(qvals, axis=-1)
@@ -151,8 +160,8 @@ class DQN(BaseAlgo):
         rewards = []
         dones = []
 
-        for env, state, action in zip(envs, states, actions):
-            next_state, reward, done, info = env.step(action)
+        for env, state, action, conf in zip(envs, states, actions, confidences):
+            next_state, reward, done, info = env.step(action, conf)
             if done:
                 next_state = env.reset()
             env.last_state = next_state

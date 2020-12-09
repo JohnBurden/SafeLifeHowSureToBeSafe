@@ -44,7 +44,7 @@ parser.add_argument('--impact-penalty', default=0.0, type=float)
 parser.add_argument('--penalty-baseline',
     choices=('starting-state', 'inaction'), default='starting-state')
 parser.add_argument('--env-type', choices=env_types)
-parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua', 'wrappedDQN', 'wrappedPPO', 'wrappedUA'), default='ppo')
+parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua', 'wrappedDQN', 'wrappedPPO', 'wrappedUA', 'confidenceDQN', 'confidencePPO'), default='ppo')
 parser.add_argument('--seed', default=None, type=int)
 args = parser.parse_args()
 
@@ -361,6 +361,32 @@ try:
                 training_envs=training_envs,
                 testing_envs=testing_envs,
                 data_logger=data_logger)
+       
+        elif args.algo == 'confidencePPO':
+            from training.models import SafeLifePolicyNetwork
+            from training.ppoConfidence import ConfidencePPO
+
+            obs_shape = training_envs[0].observation_space.shape
+            model = SafeLifePolicyNetwork(obs_shape)
+            algo = ConfidencePPO(
+                model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+
+        elif args.algo == 'confidenceDQN':
+            from training.models import SafeLifeQNetwork
+            from training.dqnConfidence import ConfidenceDQN
+
+            obs_shape = training_envs[0].observation_space.shape
+            train_model = SafeLifeQNetwork(obs_shape)
+            target_model = SafeLifeQNetwork(obs_shape)
+            algo = ConfidenceDQN(
+                train_model, target_model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+       
 
 
         else:

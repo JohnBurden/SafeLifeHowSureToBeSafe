@@ -250,6 +250,7 @@ class SafeLifeLogger(BaseLogger):
         log_data['reward_needed'] = game.required_points()
         log_data['time'] = datetime.utcnow().isoformat()
         log_data['unique_locations'] = len(set(history['locations']))
+        log_data['avgConf'] = str(np.mean(history['confidences']))
         logger.info(console_msg.format(**log_data, **self.cumulative_stats))
 
         # Then log to file.
@@ -422,8 +423,9 @@ class SafeLifeLogWrapper(gym.Wrapper):
         super().__init__(env)
         load_kwargs(self, kwargs)
 
-    def step(self, action):
+    def step(self, action, confidence=-1):
         observation, reward, done, info = self.env.step(action)
+
 
         if self.record_history and not self._did_log_episode:
             game = self.env.game
@@ -431,7 +433,7 @@ class SafeLifeLogWrapper(gym.Wrapper):
             self._episode_history['goals'].append(game.goals)
             self._episode_history['locations'].append(game.agent_loc)
             self._episode_history['orientation'].append(game.orientation)
-
+            self._episode_history['confidences'].append(confidence)
         if done and not self._did_log_episode and self.logger is not None:
             self._did_log_episode = True
             self.logger.log_episode(
@@ -449,7 +451,8 @@ class SafeLifeLogWrapper(gym.Wrapper):
             'board': [],
             'goals': [],
             'orientation': [],
-            'locations': []
+            'locations': [],
+            'confidences': []
         }
 
         return observation
