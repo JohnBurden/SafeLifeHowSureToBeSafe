@@ -44,7 +44,7 @@ parser.add_argument('--impact-penalty', default=0.0, type=float)
 parser.add_argument('--penalty-baseline',
     choices=('starting-state', 'inaction'), default='starting-state')
 parser.add_argument('--env-type', choices=env_types)
-parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua', 'wrappedDQN', 'wrappedPPO', 'wrappedUA', 'confidenceDQN', 'confidencePPO'), default='ppo')
+parser.add_argument('--algo', choices=('ppo', 'dqn', 'ua', 'noop', 'wrappedDQN', 'wrappedPPO', 'wrappedUA', 'confidenceDQN', 'confidencePPO'), default='ppo')
 parser.add_argument('--seed', default=None, type=int)
 args = parser.parse_args()
 
@@ -349,6 +349,19 @@ try:
                 testing_envs=testing_envs,
                 data_logger=data_logger)
         
+        elif args.algo=='noop':
+            from training.models import SafeLifeQNetwork
+            from training.noopAgent import NoOpAgent
+
+            obs_shape = training_envs[0].observation_space.shape
+            train_model = SafeLifeQNetwork(obs_shape)
+            target_model = SafeLifeQNetwork(obs_shape)
+            algo = NoOpAgent(
+                train_model, target_model,
+                training_envs=training_envs,
+                testing_envs=testing_envs,
+                data_logger=data_logger)
+
         elif args.algo=='wrappedUA':
             from training.models import SafeLifeQNetwork
             from training.uniformAgentAvoidGreen import UniformAgentAvoidGreen
