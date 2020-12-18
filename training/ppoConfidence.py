@@ -14,6 +14,7 @@ from .ppo import PPO
 from safelife.safelife_game import CellTypes
 
 import copy
+import math
 
 logger = logging.getLogger(__name__)
 USE_CUDA = torch.cuda.is_available()
@@ -48,8 +49,13 @@ class ConfidencePPO(PPO):
             policyCopy = copy.deepcopy(policy)
             agentX, agentY = env.game.agent_loc
             #print(env)
-            confident = max(policy) > 0.9
-           # confident = True
+
+            entropy = 0
+            for p in policyCopy:
+                if not p==0:
+                    entropy-=p*math.log(p, 9)
+            confident = entropy < 0.75
+            #confident = True
             if not confident:
                 policyCopy[5]=0
                 policyCopy[6]=0
@@ -63,7 +69,7 @@ class ConfidencePPO(PPO):
             action = get_rng().choice(len(policy), p=policyCopy)
             #print(action)
             #print()
-            obs, reward, done, info = env.step(action, max(policy))
+            obs, reward, done, info = env.step(action, entropy)
             if done:
                 obs = env.reset()
             env.last_obs = obs
