@@ -54,7 +54,7 @@ class ConfidencePPO(PPO):
             for p in policyCopy:
                 if not p==0:
                     entropy-=p*math.log(p, 9)
-            confident = entropy < 0.75
+            confident = entropy > 0.85 or entropy < 0.35
             #confident = True
             if not confident:
                 policyCopy[5]=0

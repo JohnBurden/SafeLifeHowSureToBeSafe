@@ -96,7 +96,7 @@ class DQN(BaseAlgo):
     learning_rate = 3e-4
     epsilon_schedule = UnivariateSpline(  # Piecewise linear schedule
         [5e4, 5e5, 4e6],
-        [1, 0.5, 0.03], s=0, k=1, ext='const')
+        [1, 0.5, 0.01], s=0, k=1, ext='const')
     epsilon_testing = 0.01
 
     replay_initial = 40000
@@ -143,7 +143,7 @@ class DQN(BaseAlgo):
         tensor_states = self.tensor(states, torch.float32)
         qvals = self.training_model(tensor_states).detach().cpu().numpy()
  
-
+        #print(self.epsilon)
         confidences = []
 
         for ind, qvali in enumerate(qvals):
